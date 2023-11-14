@@ -122,6 +122,8 @@ int main(void) {
         write_LCD_command(0x80);
         write_LCD_data(0x42);
         wait_ms(1000);
+
+        //why display not working
     }
     return 0 ;
 }
