@@ -57,7 +57,7 @@ char second_ones[] = {0xD0, 0xD1, 0xA4, 0xA5, 0xE4, 0xE5};
 
 void wait_ms(int milliseconds){
     int ticks = milliseconds * 366.3;
-    while(ticks != 0){
+    while(ticks > 0){
         ticks--;
     }
 }
@@ -75,11 +75,11 @@ void stopwatch (void) {
 }
 
 void init_LCD(void) {
-    FIO2DIR |= (0xFF) |= (1<<8) |= (1<<10) |= (1<<11);
+    FIO2DIR |= (255<<0) | (1<<8) | (1<<10) | (1<<11);
     wait_ms(4);
     write_LCD_command(0x38);
     write_LCD_command(0x06);
-    write_LCD_command(0x0C);
+    write_LCD_command(0x0F);
     write_LCD_command(0x01);
     wait_ms(4);
 
@@ -87,7 +87,7 @@ void init_LCD(void) {
     int custom_char_addresses[] = {0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78}
     for(int i = 0, i < 8; i++ ){
         write_LCD_command(custom_char_addresses[i]);
-            for(int j = 0; j < 5; i++){
+            for(int j = 0; j < 5; j++){
                 write_LCD_data(custom_data[i][j]);
             }
         write_LCD_command(0x80);
@@ -95,7 +95,7 @@ void init_LCD(void) {
 }
 
 void write_LCD_command(char command) {
-    FIO2PIN &= ~(0xFF);
+    FIO2PIN &= ~(255<<0);
     FIO2PIN |= command;
     FIO2PIN &= ~(1<<10);
     FIO2PIN &= ~(1<<11);
@@ -105,7 +105,7 @@ void write_LCD_command(char command) {
 }
 
 void write_LCD_data(char data) {
-    FIO2PIN &= ~(0b11111111);
+    FIO2PIN &= ~(255<<0);
     FIO2PIN |= data;
     FIO2PIN &= ~(1<<10);
     FIO2PIN |= (1<<11);
