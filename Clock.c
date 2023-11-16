@@ -8,6 +8,18 @@
 
 
 //define registers for RTC
+#define ILR (*(volatile unsigned int *) 0x40024000)
+#define CCR (*(volatile unsigned int *) 0x40024008)
+#define CIIR (*(volatile unsigned int *) 0x4002400C)
+#define AMR (*(volatile unsigned int *) 0x40024010)
+#define CTIME0 (*(volatile unsigned int *) 0x40024014)
+#define SEC (*(volatile unsigned int *) 0x40024060)
+#define MIN (*(volatile unsigned int *) 0x40024064)
+#define HOUR (*(volatile unsigned int *) 0x40024068)
+#define ALSEC (*(volatile unsigned int *) 0x40024060)
+#define ALMIN (*(volatile unsigned int *) 0x40024064)
+#define ALHOUR (*(volatile unsigned int *) 0x40024068)
+#define ISER (*(volatile unsigned int *) 0xE000E100)
 
 //define regisers for Alarm sound
 #define FIO0DIR (*(volatile unsigned int *) 0x2009C000)
@@ -55,11 +67,32 @@ char ms_colon[] = {0xCC, 0xA0, 0xE0};
 char second_tens[] = {0xCD, 0xCE, 0xA1, 0xA2, 0xE1, 0xE2};
 char second_ones[] = {0xD0, 0xD1, 0xA4, 0xA5, 0xE4, 0xE5};
 
+int clock_mode;
+
 void wait_ms(int milliseconds){
     int ticks = milliseconds * 400;
     while(ticks > 0){
         ticks--;
     }
+}
+
+void RTC_IRQHandler(void) {
+    if((ILR >> 0) & 1) {
+        if(clock_mode == 0){
+            display(clock_mode, ((CTIME0>>16)&31), ((CTIME0>>8)&63), ((CTIME0>>0)&7));
+        }
+        //do clock actions
+    }
+    if ((ILR >> 1) & 1) {
+        //do alarm actions
+    }
+}
+
+void RTCinterruptInitialize(void){
+    CIIR = (1<<0);
+    AMR = (7<<0);
+    ILR = (3<<0);
+    ISER = (1<<17);
 }
 
 void write_LCD_command(char command) {
@@ -230,14 +263,20 @@ void stopwatch (void) {
 }
 
 int main(void) {
+    CCR = (1<<0);
+
+    RTCinterruptInitialize();
 
     init_LCD();
+
+    clock_mode = 0;
     
     while(1) {
         //write_LCD_command(0x80);
         //write_LCD_data(0x42);
-        display(0, 8, 0, 0);
-        wait_ms(1000);
+        //display(0, 8, 0, 0);
+        //wait_ms(1000);
+
 
         
     }
