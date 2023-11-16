@@ -23,7 +23,7 @@
 
 
 // custom bit patterns
-char custom_data[8][5] = {{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111, 0b11111, 0b11111}, 
+char custom_data[8][8] = {{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111, 0b11111, 0b11111}, 
 {0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100}, 
 {0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b00111}, 
 {0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11111, 0b11111, 0b11111}, 
@@ -33,16 +33,16 @@ char custom_data[8][5] = {{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111,
 {0b00000, 0b00000, 0b01110, 0b01110, 0b01110, 0b00000, 0b00000, 0b00000}};
 
 // number code
-char zero[] = {0x00, 0x00, 0x01, 0x02, 0x03, 0x04};
-char one[] = {0x05, 0x06, 0x20, 0x01, 0x05, 0x03};
-char two[] = {0x00, 0x00, 0x00, 0x04, 0x03, 0x00};
-char three[] = {0x00, 0x00, 0x05, 0x04, 0x00, 0x04};
-char four[] = {0x06, 0x05, 0x03, 0x04, 0x20, 0x02};
-char five[] = {0x00, 0x00, 0x03, 0x00, 0x00, 0x04};
-char six[] = {0x00, 0x00, 0x03, 0x00, 0x03, 0x04};
-char seven[] = {0x00, 0x00, 0x20, 0x02, 0x20, 0x02};
-char eight[] = {0x00, 0x00, 0x03, 0x04, 0x03, 0x04};
-char nine[] = {0x00, 0x00, 0x03, 0x04, 0x20, 0x02};
+char numbers[10][6] = {{0x00, 0x00, 0x01, 0x02, 0x03, 0x04}, 
+{0x05, 0x06, 0x20, 0x01, 0x05, 0x03}, 
+{0x00, 0x00, 0x00, 0x04, 0x03, 0x00},
+{0x00, 0x00, 0x05, 0x04, 0x00, 0x04},
+{0x06, 0x05, 0x03, 0x04, 0x20, 0x02},
+{0x00, 0x00, 0x03, 0x00, 0x00, 0x04},
+{0x00, 0x00, 0x03, 0x00, 0x03, 0x04},
+{0x00, 0x00, 0x20, 0x02, 0x20, 0x02},
+{0x00, 0x00, 0x03, 0x04, 0x03, 0x04},
+{0x00, 0x00, 0x03, 0x04, 0x20, 0x02}}
 char colon[] = {0x20, 0x07, 0x07};
 
 // number positions
@@ -95,10 +95,61 @@ void init_LCD(void) {
     int custom_char_addresses[] = {0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78}
     for(int i = 0, i < 8; i++ ){
         write_LCD_command(custom_char_addresses[i]);
-            for(int j = 0; j < 5; j++){
+            for(int j = 0; j < 8; j++){
                 write_LCD_data(custom_data[i][j]);
             }
         write_LCD_command(0x80);
+    }
+}
+
+void display(int mode, int hh, int mm, int ss) {
+    int h_tens, h_ones, m_tens, m_ones, s_tens, s_ones;
+    h_tens = hh/10;
+    h_ones = hh%10;
+    m_tens = mm/10;
+    m_ones = mm%10;
+    s_tens = ss/10;
+    s_ones = ss%10;
+
+    switch(mode) {
+        case 0:
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(hour_tens[i]);
+                write_LCD_data(numbers[h_tens][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(hour_ones[i]);
+                write_LCD_data(numbers[h_ones][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(hm_colon[i]);
+                write_LCD_data(colon[i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(minute_tens[i]);
+                write_LCD_data(numbers[m_tens][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(minute_ones[i]);
+                write_LCD_data(numbers[m_ones][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(ms_colon[i]);
+                write_LCD_data(colon[i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(second_tens[i]);
+                write_LCD_data(numbers[s_tens][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(second_ones[i]);
+                write_LCD_data(numbers[s_ones][i]);
+            }
+            break;
+        case 1:
+            break;
+        case 2:
+            break;
     }
 }
 
@@ -119,8 +170,9 @@ int main(void) {
     init_LCD();
     
     while(1) {
-        write_LCD_command(0x80);
-        write_LCD_data(0x42);
+        //write_LCD_command(0x80);
+        //write_LCD_data(0x42);
+        display(0, 8, 0, 0);
         wait_ms(1000);
 
         
