@@ -14,11 +14,11 @@
 #define FIO0PIN (*(volatile unsigned int *) 0x2009C014)
 #define PINSEL1 (*(volatile unsigned int *) 0x4002C004)
 #define DACR (*(volatile unsigned int *) 0x4008C000)
+//Switch 1 P0. , Switch 2 P0. , Switch 3 P0. 
 
 //define registers for LCD pins
 #define FIO2DIR (*(volatile unsigned int *) 0x2009C040)
 #define FIO2PIN (*(volatile unsigned int *) 0x2009C054)
-
 //DB0-7 P2.0-7, E P2.8, R/W P2.10, RS P2.11
 
 
@@ -62,16 +62,24 @@ void wait_ms(int milliseconds){
     }
 }
 
-void set_alarm (void) {
-
+void write_LCD_command(char command) {
+    FIO2PIN &= ~(255<<0);
+    FIO2PIN |= command;
+    FIO2PIN &= ~(1<<10);
+    FIO2PIN &= ~(1<<11);
+    FIO2PIN |= (1<<8);
+    FIO2PIN &= ~(1<<8);
+    wait_ms(100); 
 }
 
-void set_clock (void) {
-
-}
-
-void stopwatch (void) {
-
+void write_LCD_data(char data) {
+    FIO2PIN &= ~(255<<0);
+    FIO2PIN |= data;
+    FIO2PIN &= ~(1<<10);
+    FIO2PIN |= (1<<11);
+    FIO2PIN |= (1<<8);
+    FIO2PIN &= ~(1<<8);
+    wait_ms(100);
 }
 
 void init_LCD(void) {
@@ -94,24 +102,16 @@ void init_LCD(void) {
     }
 }
 
-void write_LCD_command(char command) {
-    FIO2PIN &= ~(255<<0);
-    FIO2PIN |= command;
-    FIO2PIN &= ~(1<<10);
-    FIO2PIN &= ~(1<<11);
-    FIO2PIN |= (1<<8);
-    FIO2PIN &= ~(1<<8);
-    wait_ms(100); 
+void set_alarm (void) {
+
 }
 
-void write_LCD_data(char data) {
-    FIO2PIN &= ~(255<<0);
-    FIO2PIN |= data;
-    FIO2PIN &= ~(1<<10);
-    FIO2PIN |= (1<<11);
-    FIO2PIN |= (1<<8);
-    FIO2PIN &= ~(1<<8);
-    wait_ms(100);
+void set_clock (void) {
+
+}
+
+void stopwatch (void) {
+
 }
 
 int main(void) {
@@ -123,7 +123,7 @@ int main(void) {
         write_LCD_data(0x42);
         wait_ms(1000);
 
-        //why display not working
+        
     }
     return 0 ;
 }
