@@ -42,7 +42,7 @@ char numbers[10][6] = {{0x00, 0x00, 0x01, 0x02, 0x03, 0x04},
 {0x00, 0x00, 0x03, 0x00, 0x03, 0x04},
 {0x00, 0x00, 0x20, 0x02, 0x20, 0x02},
 {0x00, 0x00, 0x03, 0x04, 0x03, 0x04},
-{0x00, 0x00, 0x03, 0x04, 0x20, 0x02}}
+{0x00, 0x00, 0x03, 0x04, 0x20, 0x02}};
 char colon[] = {0x20, 0x07, 0x07};
 
 // number positions
@@ -56,7 +56,7 @@ char second_tens[] = {0xCD, 0xCE, 0xA1, 0xA2, 0xE1, 0xE2};
 char second_ones[] = {0xD0, 0xD1, 0xA4, 0xA5, 0xE4, 0xE5};
 
 void wait_ms(int milliseconds){
-    int ticks = milliseconds * 366.3;
+    int ticks = milliseconds * 400;
     while(ticks > 0){
         ticks--;
     }
@@ -92,8 +92,8 @@ void init_LCD(void) {
     wait_ms(4);
 
     // Program custom characters
-    int custom_char_addresses[] = {0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78}
-    for(int i = 0, i < 8; i++ ){
+    int custom_char_addresses[] = {0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78};
+    for(int i = 0; i < 8; i++){
         write_LCD_command(custom_char_addresses[i]);
             for(int j = 0; j < 8; j++){
                 write_LCD_data(custom_data[i][j]);
@@ -147,8 +147,72 @@ void display(int mode, int hh, int mm, int ss) {
             }
             break;
         case 1:
+        for(int i = 0; i < 6; i++){
+                write_LCD_command(hour_tens[i]);
+                write_LCD_data(numbers[h_tens][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(hour_ones[i]);
+                write_LCD_data(numbers[h_ones][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(hm_colon[i]);
+                write_LCD_data(colon[i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(minute_tens[i]);
+                write_LCD_data(numbers[m_tens][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(minute_ones[i]);
+                write_LCD_data(numbers[m_ones][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(ms_colon[i]);
+                write_LCD_data(0x20);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(second_tens[i]);
+                write_LCD_data(0x20);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(second_ones[i]);
+                write_LCD_data(0x20);
+            }
             break;
         case 2:
+        for(int i = 0; i < 6; i++){
+                write_LCD_command(hour_tens[i]);
+                write_LCD_data(0x20);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(hour_ones[i]);
+                write_LCD_data(0x20);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(hm_colon[i]);
+                write_LCD_data(0x20);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(minute_tens[i]);
+                write_LCD_data(numbers[m_tens][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(minute_ones[i]);
+                write_LCD_data(numbers[m_ones][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(ms_colon[i]);
+                write_LCD_data(colon[i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(second_tens[i]);
+                write_LCD_data(numbers[s_tens][i]);
+            }
+            for(int i = 0; i < 6; i++){
+                write_LCD_command(second_ones[i]);
+                write_LCD_data(numbers[s_ones][i]);
+            }
             break;
     }
 }
