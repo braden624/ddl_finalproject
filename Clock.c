@@ -87,7 +87,7 @@ void init_LCD(void) {
     wait_ms(4);
     write_LCD_command(0x38);
     write_LCD_command(0x06);
-    write_LCD_command(0x0F);
+    write_LCD_command(0x0C);
     write_LCD_command(0x01);
     wait_ms(4);
 
@@ -121,7 +121,7 @@ void display(int mode, int hh, int mm, int ss) {
                 write_LCD_command(hour_ones[i]);
                 write_LCD_data(numbers[h_ones][i]);
             }
-            for(int i = 0; i < 6; i++){
+            for(int i = 0; i < 3; i++){
                 write_LCD_command(hm_colon[i]);
                 write_LCD_data(colon[i]);
             }
@@ -133,7 +133,7 @@ void display(int mode, int hh, int mm, int ss) {
                 write_LCD_command(minute_ones[i]);
                 write_LCD_data(numbers[m_ones][i]);
             }
-            for(int i = 0; i < 6; i++){
+            for(int i = 0; i < 3; i++){
                 write_LCD_command(ms_colon[i]);
                 write_LCD_data(colon[i]);
             }
@@ -155,7 +155,7 @@ void display(int mode, int hh, int mm, int ss) {
                 write_LCD_command(hour_ones[i]);
                 write_LCD_data(numbers[h_ones][i]);
             }
-            for(int i = 0; i < 6; i++){
+            for(int i = 0; i < 3; i++){
                 write_LCD_command(hm_colon[i]);
                 write_LCD_data(colon[i]);
             }
@@ -167,7 +167,7 @@ void display(int mode, int hh, int mm, int ss) {
                 write_LCD_command(minute_ones[i]);
                 write_LCD_data(numbers[m_ones][i]);
             }
-            for(int i = 0; i < 6; i++){
+            for(int i = 0; i < 3; i++){
                 write_LCD_command(ms_colon[i]);
                 write_LCD_data(0x20);
             }
@@ -189,7 +189,7 @@ void display(int mode, int hh, int mm, int ss) {
                 write_LCD_command(hour_ones[i]);
                 write_LCD_data(0x20);
             }
-            for(int i = 0; i < 6; i++){
+            for(int i = 0; i < 3; i++){
                 write_LCD_command(hm_colon[i]);
                 write_LCD_data(0x20);
             }
@@ -201,7 +201,7 @@ void display(int mode, int hh, int mm, int ss) {
                 write_LCD_command(minute_ones[i]);
                 write_LCD_data(numbers[m_ones][i]);
             }
-            for(int i = 0; i < 6; i++){
+            for(int i = 0; i < 3; i++){
                 write_LCD_command(ms_colon[i]);
                 write_LCD_data(colon[i]);
             }
