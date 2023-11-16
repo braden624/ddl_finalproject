@@ -20,6 +20,7 @@
 #define ALMIN (*(volatile unsigned int *) 0x40024064)
 #define ALHOUR (*(volatile unsigned int *) 0x40024068)
 #define ISER (*(volatile unsigned int *) 0xE000E100)
+#define PCONP (*(volatile unsigned int *) 0xE000E100)
 
 //define regisers for Alarm sound
 #define FIO0DIR (*(volatile unsigned int *) 0x2009C000)
@@ -79,8 +80,9 @@ void wait_ms(int milliseconds){
 void RTC_IRQHandler(void) {
     if((ILR >> 0) & 1) {
         if(clock_mode == 0){
-            display(clock_mode, ((CTIME0>>16)&31), ((CTIME0>>8)&63), ((CTIME0>>0)&7));
+            display(clock_mode, HOUR, MIN, SEC);
         }
+        ILR |= (1<<0);
         //do clock actions
     }
     if ((ILR >> 1) & 1) {
@@ -89,10 +91,10 @@ void RTC_IRQHandler(void) {
 }
 
 void RTCinterruptInitialize(void){
-    CIIR = (1<<0);
-    AMR = (7<<0);
-    ILR = (3<<0);
-    ISER = (1<<17);
+    CIIR |= (1<<0);
+    AMR |= (7<<0);
+    ILR |= (3<<0);
+    ISER |= (1<<17);
 }
 
 void write_LCD_command(char command) {
@@ -263,7 +265,9 @@ void stopwatch (void) {
 }
 
 int main(void) {
-    CCR = (1<<0);
+    CCR |= (3<<0);
+    CCR &= ~(1<<1)
+    
 
     RTCinterruptInitialize();
 
