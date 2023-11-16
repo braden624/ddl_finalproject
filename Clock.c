@@ -13,9 +13,9 @@
 #define CIIR (*(volatile unsigned int *) 0x4002400C)
 #define AMR (*(volatile unsigned int *) 0x40024010)
 #define CTIME0 (*(volatile unsigned int *) 0x40024014)
-#define SEC (*(volatile unsigned int *) 0x40024060)
-#define MIN (*(volatile unsigned int *) 0x40024064)
-#define HOUR (*(volatile unsigned int *) 0x40024068)
+#define SEC (*(volatile unsigned int *) 0x40024020)
+#define MIN (*(volatile unsigned int *) 0x40024024)
+#define HOUR (*(volatile unsigned int *) 0x40024028)
 #define ALSEC (*(volatile unsigned int *) 0x40024060)
 #define ALMIN (*(volatile unsigned int *) 0x40024064)
 #define ALHOUR (*(volatile unsigned int *) 0x40024068)
@@ -27,7 +27,7 @@
 #define FIO0PIN (*(volatile unsigned int *) 0x2009C014)
 #define PINSEL1 (*(volatile unsigned int *) 0x4002C004)
 #define DACR (*(volatile unsigned int *) 0x4008C000)
-//Switch 1 P0. , Switch 2 P0. , Switch 3 P0. 
+//Switch 1 P0. , Switch 2 P0. , Switch 3 P0.
 
 //define registers for LCD pins
 #define FIO2DIR (*(volatile unsigned int *) 0x2009C040)
@@ -36,18 +36,18 @@
 
 
 // custom bit patterns
-char custom_data[8][8] = {{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111, 0b11111, 0b11111}, 
-{0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100}, 
-{0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b00111}, 
-{0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11111, 0b11111, 0b11111}, 
-{0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b11111, 0b11111, 0b11111}, 
-{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00111, 0b00111, 0b00111}, 
-{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11100, 0b11100, 0b11100}, 
+char custom_data[8][8] = {{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111, 0b11111, 0b11111},
+{0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11100},
+{0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b00111},
+{0b11100, 0b11100, 0b11100, 0b11100, 0b11100, 0b11111, 0b11111, 0b11111},
+{0b00111, 0b00111, 0b00111, 0b00111, 0b00111, 0b11111, 0b11111, 0b11111},
+{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00111, 0b00111, 0b00111},
+{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11100, 0b11100, 0b11100},
 {0b00000, 0b00000, 0b01110, 0b01110, 0b01110, 0b00000, 0b00000, 0b00000}};
 
 // number code
-char numbers[10][6] = {{0x00, 0x00, 0x01, 0x02, 0x03, 0x04}, 
-{0x05, 0x06, 0x20, 0x01, 0x05, 0x03}, 
+char numbers[10][6] = {{0x00, 0x00, 0x01, 0x02, 0x03, 0x04},
+{0x05, 0x06, 0x20, 0x01, 0x05, 0x03},
 {0x00, 0x00, 0x00, 0x04, 0x03, 0x00},
 {0x00, 0x00, 0x05, 0x04, 0x00, 0x04},
 {0x06, 0x05, 0x03, 0x04, 0x20, 0x02},
@@ -80,13 +80,14 @@ void wait_ms(int milliseconds){
 void RTC_IRQHandler(void) {
     if((ILR >> 0) & 1) {
         if(clock_mode == 0){
-            display(clock_mode, HOUR, MIN, SEC);
+            display(clock_mode, (HOUR&31), (MIN&63), (SEC&63));
         }
         ILR |= (1<<0);
         //do clock actions
     }
     if ((ILR >> 1) & 1) {
         //do alarm actions
+    	ILR |= (1<<1);
     }
 }
 
@@ -97,6 +98,16 @@ void RTCinterruptInitialize(void){
     ISER |= (1<<17);
 }
 
+void write_LCD_clear(char command) {
+    FIO2PIN &= ~(255<<0);
+    FIO2PIN |= command;
+    FIO2PIN &= ~(1<<10);
+    FIO2PIN &= ~(1<<11);
+    FIO2PIN |= (1<<8);
+    FIO2PIN &= ~(1<<8);
+    wait_ms(100);
+}
+
 void write_LCD_command(char command) {
     FIO2PIN &= ~(255<<0);
     FIO2PIN |= command;
@@ -104,7 +115,7 @@ void write_LCD_command(char command) {
     FIO2PIN &= ~(1<<11);
     FIO2PIN |= (1<<8);
     FIO2PIN &= ~(1<<8);
-    wait_ms(100); 
+    wait_ms(2);
 }
 
 void write_LCD_data(char data) {
@@ -114,7 +125,7 @@ void write_LCD_data(char data) {
     FIO2PIN |= (1<<11);
     FIO2PIN |= (1<<8);
     FIO2PIN &= ~(1<<8);
-    wait_ms(100);
+    wait_ms(2);
 }
 
 void init_LCD(void) {
@@ -123,7 +134,7 @@ void init_LCD(void) {
     write_LCD_command(0x38);
     write_LCD_command(0x06);
     write_LCD_command(0x0C);
-    write_LCD_command(0x01);
+    write_LCD_clear(0x01);
     wait_ms(4);
 
     // Program custom characters
@@ -265,16 +276,18 @@ void stopwatch (void) {
 }
 
 int main(void) {
-    CCR |= (3<<0);
-    CCR &= ~(1<<1)
-    
+    CCR |= (1<<0);
+
+    HOUR = 23;
+    MIN = 59;
+    SEC = 30;
 
     RTCinterruptInitialize();
 
     init_LCD();
 
     clock_mode = 0;
-    
+
     while(1) {
         //write_LCD_command(0x80);
         //write_LCD_data(0x42);
@@ -282,7 +295,7 @@ int main(void) {
         //wait_ms(1000);
 
 
-        
+
     }
     return 0 ;
 }
