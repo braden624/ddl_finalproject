@@ -300,27 +300,27 @@ void set_alarm (void) {
             wait_ms(3000);
             if((FIO0PIN >> 0) & 1){
                 index--;
-                break;
+            } else {
+            	index++;
             }
-            index++;
         }
         // Switch 2
         if((FIO0PIN >> 1) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 1) & 1){
                 alarmTime[index] = alarmTime[index] + 10;
-                break;
+            } else {
+            	alarmTime[index]++;
             }
-            alarmTime[index]++;
         }
         // Switch 3
         if((FIO0PIN >> 2) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 2) & 1){
                 alarmTime[index] = alarmTime[index] - 10;
-                break;
+            } else {
+            	alarmTime[index]--;
             }
-            alarmTime[index]--;
         }
         switch(index) {
             case 0: displayTop("Set Alarm -> Hour");
@@ -344,27 +344,27 @@ void set_clock (void) {
             wait_ms(3000);
             if((FIO0PIN >> 0) & 1){
                 index--;
-                break;
+            } else {
+            	index++;
             }
-            index++;
         }
         // Switch 2
         if((FIO0PIN >> 1) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 1) & 1){
                 clockTime[index] = clockTime[index] + 10;
-                break;
+            } else {
+            	clockTime[index]++;
             }
-            clockTime[index]++;
         }
         // Switch 3
         if((FIO0PIN >> 2) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 2) & 1){
                 clockTime[index] = clockTime[index] - 10;
-                break;
+            } else {
+            	clockTime[index]--;
             }
-            clockTime[index]--;
         }
         switch(index) {
             case 0: displayTop("Set Clock -> Hour");
@@ -382,9 +382,12 @@ void set_clock (void) {
 int main(void) {
     CCR |= (1<<0);
 
-    HOUR = 23;
-    MIN = 59;
-    SEC = 30;
+    HOUR = 12;
+    MIN = 0;
+    SEC = 0;
+    ALHOUR = 23;
+    ALMIN = 59;
+    ALSEC = 59;
 
     RTCinterruptInitialize();
 
@@ -410,12 +413,12 @@ int main(void) {
                 } else {
                     alarmStatus = 0;
                 }
-                break;
-            }
-            if(clockMode == 0){
-                clockMode = 1;
             } else {
-                clockMode = 0;
+            	if(clockMode == 0){
+            		clockMode = 1;
+            	} else {
+            		clockMode = 0;
+            	}
             }
         }
         // Switch 2
@@ -430,12 +433,12 @@ int main(void) {
                     stopMin = 0;
                     stopSec = 0;
                 }
-                break;
-            }
-            if(stopStatus == 0){
-                stopStatus = 1;
             } else {
-                stopStatus = 0;
+            	if(stopStatus == 0){
+            		stopStatus = 1;
+            	} else {
+            		stopStatus = 0;
+            	}
             }
         }
         // Switch 3
@@ -444,10 +447,8 @@ int main(void) {
             if((FIO0PIN >> 2) & 1){
                 clockMode = 2;
                 set_alarm();
-                break;
             }
         }
-
     }
     return 0 ;
 }
