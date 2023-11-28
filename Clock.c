@@ -295,7 +295,7 @@ void set_alarm (void) {
     int alarmTime[] = {ALHOUR, ALMIN, ALSEC};
     int index = 0;
     while(index > 0  && index < 4){
-        // Switch 1
+        // Button 1
         if((FIO0PIN >> 0) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 0) & 1){
@@ -304,7 +304,7 @@ void set_alarm (void) {
             	index++;
             }
         }
-        // Switch 2
+        // Button 2
         if((FIO0PIN >> 1) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 1) & 1){
@@ -313,7 +313,7 @@ void set_alarm (void) {
             	alarmTime[index]++;
             }
         }
-        // Switch 3
+        // Button 3
         if((FIO0PIN >> 2) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 2) & 1){
@@ -339,7 +339,7 @@ void set_clock (void) {
     int clockTime[] = {HOUR, MIN, SEC};
     int index = 0;
     while(index < 4 && index > 0){
-        // Switch 1
+        // Button 1
         if((FIO0PIN >> 0) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 0) & 1){
@@ -348,7 +348,7 @@ void set_clock (void) {
             	index++;
             }
         }
-        // Switch 2
+        // Button 2
         if((FIO0PIN >> 1) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 1) & 1){
@@ -357,7 +357,7 @@ void set_clock (void) {
             	clockTime[index]++;
             }
         }
-        // Switch 3
+        // Button 3
         if((FIO0PIN >> 2) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 2) & 1){
@@ -404,7 +404,7 @@ int main(void) {
         //display(0, 8, 0, 0);
         //wait_ms(1000);
 
-        // Switch 1
+        // Button 1
         if((FIO0PIN >> 0) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 0) & 1){
@@ -421,7 +421,7 @@ int main(void) {
             	}
             }
         }
-        // Switch 2
+        // Button 2
         if((FIO0PIN >> 1) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 1) & 1){
@@ -441,7 +441,7 @@ int main(void) {
             	}
             }
         }
-        // Switch 3
+        // Button 3
         if((FIO0PIN >> 2) & 1){
             wait_ms(3000);
             if((FIO0PIN >> 2) & 1){
