@@ -78,6 +78,8 @@ int alarmHour = 23;
 int alarmMin = 59;
 int alarmSec = 59;
 
+void display(int mode, int hh, int mm, int ss);
+
 void wait_ms(int milliseconds){
     int ticks = milliseconds * 400;
     while(ticks > 0){
@@ -291,7 +293,6 @@ void displayTop(char text[]){
 void set_alarm (void) {
     int alarmTime[] = {ALHOUR, ALMIN, ALSEC};
     int index = 0;
-    string set_selector;
     while(index > 0  && index < 4){
         // Switch 1
         if((FIO0PIN >> 0) & 1){
@@ -330,7 +331,7 @@ void set_alarm (void) {
     ALHOUR = alarmTime[0];
     ALMIN = alarmTime[1];
     ALSEC = alarmTime[2];
-    return 0 ;
+    return;
 }
 
 void set_clock (void) {
@@ -374,7 +375,7 @@ void set_clock (void) {
     HOUR = clockTime[0];
     MIN = clockTime[1];
     SEC = clockTime[2];
-    return 0 ;
+    return;
 }
 
 int main(void) {
