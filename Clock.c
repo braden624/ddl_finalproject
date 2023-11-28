@@ -26,6 +26,7 @@
 #define FIO0DIR (*(volatile unsigned int *) 0x2009C000)
 #define FIO0PIN (*(volatile unsigned int *) 0x2009C014)
 #define PINSEL1 (*(volatile unsigned int *) 0x4002C004)
+#define PINMODE0 (*(volatile unsigned int *) 0x4002C044)
 #define DACR (*(volatile unsigned int *) 0x4008C000)
 //Switch 1 P0. , Switch 2 P0. , Switch 3 P0.
 
@@ -390,6 +391,7 @@ int main(void) {
     init_LCD();
 
     FIO0DIR &= ~(7<<0);
+    PINMODE0 |= (3<<0) | (3<<2) | (3<<4);
 
     clockMode = 0;
 
@@ -445,7 +447,6 @@ int main(void) {
                 break;
             }
         }
-
 
     }
     return 0 ;
