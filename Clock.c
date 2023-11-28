@@ -281,15 +281,15 @@ void display(int mode, int hh, int mm, int ss) {
     }
 }
 
-void displayTop(char[] text){
+void displayTop(char text[]){
     write_LCD_command(0x80);
-    for(int i = 0; i < 20){
+    for(int i = 0; i < 20; i++){
         write_LCD_data(text[i]);
     }
 }
 
 void set_alarm (void) {
-    int alarmTime[] = [ALHOUR, ALMIN, ALSEC];
+    int alarmTime[] = {ALHOUR, ALMIN, ALSEC};
     int index = 0;
     string set_selector;
     while(index > 0  && index < 4){
@@ -334,7 +334,7 @@ void set_alarm (void) {
 }
 
 void set_clock (void) {
-    int clockTime[] = [HOUR, MIN, SEC];
+    int clockTime[] = {HOUR, MIN, SEC};
     int index = 0;
     while(index < 4 && index > 0){
         // Switch 1
