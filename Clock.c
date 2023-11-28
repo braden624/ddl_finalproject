@@ -26,7 +26,7 @@
 #define FIO0DIR (*(volatile unsigned int *) 0x2009C000)
 #define FIO0PIN (*(volatile unsigned int *) 0x2009C014)
 #define PINSEL1 (*(volatile unsigned int *) 0x4002C004)
-#define PINMODE0 (*(volatile unsigned int *) 0x4002C044)
+#define PINMODE0 (*(volatile unsigned int *) 0x4002C040)
 #define DACR (*(volatile unsigned int *) 0x4008C000)
 //Switch 1 P0. , Switch 2 P0. , Switch 3 P0.
 
@@ -79,6 +79,8 @@ int alarmHour = 23;
 int alarmMin = 59;
 int alarmSec = 59;
 
+int longCount = 1000;
+
 void display(int mode, int hh, int mm, int ss);
 
 void wait_ms(int milliseconds){
@@ -94,14 +96,16 @@ void RTC_IRQHandler(void) {
             display(clockMode, (HOUR&31), (MIN&63), (SEC&63));
         }
         else if(clockMode == 1){
-            stopSec++;
-            if(stopSec > 59){
-                stopSec = 0;
-                stopMin++;
-                if(stopMin > 99){
-                    stopMin = 0;
-                }
-            }
+        	if(stopStatus == 1){
+        		stopSec++;
+        		if(stopSec > 59){
+        			stopSec = 0;
+        			stopMin++;
+        			if(stopMin > 99){
+        				stopMin = 0;
+        			}
+        		}
+        	}
             display(clockMode, stopHour, stopMin, stopSec);
         }
         ILR |= (1<<0);
@@ -179,7 +183,7 @@ void display(int mode, int hh, int mm, int ss) {
     s_ones = ss%10;
 
     switch(mode) {
-        case 0:
+        case 0: case 2:
             for(int i = 0; i < 6; i++){
                 write_LCD_command(hour_tens[i]);
                 write_LCD_data(numbers[h_tens][i]);
@@ -214,41 +218,7 @@ void display(int mode, int hh, int mm, int ss) {
             }
             break;
         case 1:
-        for(int i = 0; i < 6; i++){
-                write_LCD_command(hour_tens[i]);
-                write_LCD_data(numbers[h_tens][i]);
-            }
-            for(int i = 0; i < 6; i++){
-                write_LCD_command(hour_ones[i]);
-                write_LCD_data(numbers[h_ones][i]);
-            }
-            for(int i = 0; i < 3; i++){
-                write_LCD_command(hm_colon[i]);
-                write_LCD_data(colon[i]);
-            }
-            for(int i = 0; i < 6; i++){
-                write_LCD_command(minute_tens[i]);
-                write_LCD_data(numbers[m_tens][i]);
-            }
-            for(int i = 0; i < 6; i++){
-                write_LCD_command(minute_ones[i]);
-                write_LCD_data(numbers[m_ones][i]);
-            }
-            for(int i = 0; i < 3; i++){
-                write_LCD_command(ms_colon[i]);
-                write_LCD_data(0x20);
-            }
-            for(int i = 0; i < 6; i++){
-                write_LCD_command(second_tens[i]);
-                write_LCD_data(0x20);
-            }
-            for(int i = 0; i < 6; i++){
-                write_LCD_command(second_ones[i]);
-                write_LCD_data(0x20);
-            }
-            break;
-        case 2:
-        for(int i = 0; i < 6; i++){
+        	for(int i = 0; i < 6; i++){
                 write_LCD_command(hour_tens[i]);
                 write_LCD_data(0x20);
             }
@@ -294,38 +264,60 @@ void displayTop(char text[]){
 void set_alarm (void) {
     int alarmTime[] = {ALHOUR, ALMIN, ALSEC};
     int index = 0;
-    while(index > 0  && index < 4){
+    int mod = 23;
+    while(index > -1  && index < 4){
+    	int count = 0;
         // Button 1
         if((FIO0PIN >> 0) & 1){
-            wait_ms(3000);
-            if((FIO0PIN >> 0) & 1){
+        	while((FIO0PIN >> 0) & 1){
+        		count++;
+        	    wait_ms(1);
+        	}
+            if(count > longCount){
                 index--;
             } else {
             	index++;
             }
+            switch(index){
+            	case 0: mod = 23; break;
+            	case 1: case 2: mod = 59; break;
+            }
         }
         // Button 2
         if((FIO0PIN >> 1) & 1){
-            wait_ms(3000);
-            if((FIO0PIN >> 1) & 1){
+        	while((FIO0PIN >> 1) & 1){
+        		count++;
+        	    wait_ms(1);
+        	}
+
+        	if(count > longCount){
                 alarmTime[index] = alarmTime[index] + 10;
             } else {
-            	alarmTime[index]++;
+            	alarmTime[index]++;;
             }
+        	if(alarmTime[index] > mod){
+        		alarmTime[index] = alarmTime[index] - mod - 1;
+        	}
         }
         // Button 3
         if((FIO0PIN >> 2) & 1){
-            wait_ms(3000);
-            if((FIO0PIN >> 2) & 1){
+        	while((FIO0PIN >> 2) & 1){
+        		count++;
+        	    wait_ms(1);
+        	}
+        	if(count > longCount){
                 alarmTime[index] = alarmTime[index] - 10;
             } else {
             	alarmTime[index]--;
             }
+        	if(alarmTime[index] < 0){
+        		alarmTime[index] = alarmTime[index] + mod + 1;
+        	}
         }
         switch(index) {
-            case 0: displayTop("Set Alarm -> Hour");
-            case 1: displayTop("Set Alarm -> Minute");
-            case 2: displayTop("Set Alarm -> Second");
+            case 0: displayTop("Set Alarm -> Hour   "); break;
+            case 1: displayTop("Set Alarm -> Minute "); break;
+            case 2: displayTop("Set Alarm -> Second "); break;
         }
         display(clockMode, alarmTime[0], alarmTime[1], alarmTime[2]);
     }
@@ -338,44 +330,67 @@ void set_alarm (void) {
 void set_clock (void) {
     int clockTime[] = {HOUR, MIN, SEC};
     int index = 0;
-    while(index < 4 && index > 0){
+    int mod = 23;
+    while(index < 4 && index > -1){
+    	int count = 0;
         // Button 1
         if((FIO0PIN >> 0) & 1){
-            wait_ms(3000);
-            if((FIO0PIN >> 0) & 1){
+        	while((FIO0PIN >> 0) & 1){
+        		count++;
+        	    wait_ms(1);
+        	}
+        	if(count > longCount){
                 index--;
             } else {
             	index++;
             }
+        	switch(index){
+        		case 0: mod = 23; break;
+        		case 1: case 2: mod = 59; break;
+        	}
         }
         // Button 2
         if((FIO0PIN >> 1) & 1){
-            wait_ms(3000);
-            if((FIO0PIN >> 1) & 1){
+        	while((FIO0PIN >> 1) & 1){
+        		count++;
+        	    wait_ms(1);
+        	}
+        	if(count > longCount){
                 clockTime[index] = clockTime[index] + 10;
             } else {
             	clockTime[index]++;
             }
+        	if(clockTime[index] > mod){
+        		clockTime[index] = clockTime[index] - mod - 1;
+        	}
         }
         // Button 3
         if((FIO0PIN >> 2) & 1){
-            wait_ms(3000);
-            if((FIO0PIN >> 2) & 1){
+        	while((FIO0PIN >> 0) & 1){
+        		count++;
+        	    wait_ms(1);
+        	}
+        	if(count > longCount){
                 clockTime[index] = clockTime[index] - 10;
             } else {
             	clockTime[index]--;
             }
+        	if(clockTime[index] < 0){
+        		clockTime[index] = clockTime[index] + mod + 1;
+        	}
         }
         switch(index) {
-            case 0: displayTop("Set Clock -> Hour");
-            case 1: displayTop("Set Clock -> Minute");
-            case 2: displayTop("Set Clock -> Second");
+            case 0: displayTop("Set Clock -> Hour   "); break;
+            case 1: displayTop("Set Clock -> Minute "); break;
+            case 2: displayTop("Set Clock -> Second "); break;
         }
         display(clockMode, clockTime[0], clockTime[1], clockTime[2]);
     }
     HOUR = clockTime[0];
     MIN = clockTime[1];
     SEC = clockTime[2];
+    write_LCD_command(0x80);
+    displayTop("Clock       Alarm On");
     return;
 }
 
@@ -393,8 +408,8 @@ int main(void) {
 
     init_LCD();
 
-    FIO0DIR &= ~(7<<0);
-    PINMODE0 |= (3<<0) | (3<<2) | (3<<4);
+    FIO0DIR &= ~(1u<<0) & ~(1u<<1) & ~(1u<<2);
+    PINMODE0 |= (1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5);
 
     clockMode = 0;
 
@@ -404,10 +419,14 @@ int main(void) {
         //display(0, 8, 0, 0);
         //wait_ms(1000);
 
+    	int count = 0;
         // Button 1
         if((FIO0PIN >> 0) & 1){
-            wait_ms(3000);
-            if((FIO0PIN >> 0) & 1){
+        	while((FIO0PIN >> 0) & 1){
+        		count++;
+        		wait_ms(1);
+        	}
+            if(count > longCount){
                 if(alarmStatus == 0){
                     alarmStatus = 1;
                 } else {
@@ -423,11 +442,15 @@ int main(void) {
         }
         // Button 2
         if((FIO0PIN >> 1) & 1){
-            wait_ms(3000);
-            if((FIO0PIN >> 1) & 1){
+        	while((FIO0PIN >> 1) & 1){
+        	        		count++;
+        	        		wait_ms(1);
+        	        	}
+            if(count > longCount){
                 if(clockMode == 0){
                     clockMode = 2;
                     set_clock();
+                    clockMode = 0;
                 } else if(clockMode == 1){
                     stopHour = 0;
                     stopMin = 0;
@@ -443,12 +466,28 @@ int main(void) {
         }
         // Button 3
         if((FIO0PIN >> 2) & 1){
-            wait_ms(3000);
-            if((FIO0PIN >> 2) & 1){
-                clockMode = 2;
-                set_alarm();
+        	while((FIO0PIN >> 2) & 1){
+        		count++;
+        	    wait_ms(1);
+        	}
+            if(count > longCount){
+            	if (clockMode == 0){
+            		clockMode = 2;
+            		set_alarm();
+            		clockMode = 0;
+            	}
+
             }
         }
     }
     return 0 ;
 }
+
+//Questions
+// Should stopwatch reset and pause when cycling modes
+// Should short and long press be shorter in time length
+
+//To Do
+// Display top on clock and stopwatch
+// Alarm sound
+// Button sound
