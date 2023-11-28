@@ -69,6 +69,12 @@ char second_tens[] = {0xCD, 0xCE, 0xA1, 0xA2, 0xE1, 0xE2};
 char second_ones[] = {0xD0, 0xD1, 0xA4, 0xA5, 0xE4, 0xE5};
 
 int clock_mode;
+int Stop_HOUR = 0;
+int Stop_MIN = 0;
+int Stop_SEC = 0;
+int Alarm_HOUR = 23;
+int Alarm_MIN = 59;
+int Alarm_SEC = 59;
 
 void wait_ms(int milliseconds){
     int ticks = milliseconds * 400;
@@ -81,6 +87,20 @@ void RTC_IRQHandler(void) {
     if((ILR >> 0) & 1) {
         if(clock_mode == 0){
             display(clock_mode, (HOUR&31), (MIN&63), (SEC&63));
+        }
+        if(clock_mode == 1){
+            Stop_SEC++;
+            if(Stop_SEC > 59){
+                Stop_SEC = 0;
+                Stop_MIN++;
+                if(Stop_MIN > 99){
+                    Stop_MIN = 0;
+                }
+            }
+            display(clock_mode, Stop_HOUR, Stop_MIN, Stop_SEC);
+        }
+        if(clock_mode == 2){
+            display(clock_mode, Alarm_HOUR, Alarm_MIN, Alarm_SEC);
         }
         ILR |= (1<<0);
         //do clock actions
@@ -286,6 +306,8 @@ int main(void) {
 
     init_LCD();
 
+    FIO0DIR &= ~(7<<0);
+
     clock_mode = 0;
 
     while(1) {
@@ -294,6 +316,8 @@ int main(void) {
         //display(0, 8, 0, 0);
         //wait_ms(1000);
 
+
+        if()
 
 
     }
