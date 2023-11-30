@@ -31,9 +31,10 @@
 #define T0IR (*(volatile unsigned int *) 0x40004000)
 #define T0TCR (*(volatile unsigned int *) 0x40004004)
 #define T0TC (*(volatile unsigned int *) 0x40004008)
-//#define T0PR (*(volatile unsigned int *) 0x4000400C)
+#define T0PR (*(volatile unsigned int *) 0x4000400C)
 #define T0MCR (*(volatile unsigned int *) 0x40004014)
 #define T0MR0 (*(volatile unsigned int *) 0x40004018)
+#define T0CTCR (*(volatile unsigned int *) 0x40004070)
 
 //define registers for LCD pins
 #define FIO2DIR (*(volatile unsigned int *) 0x2009C040)
@@ -75,6 +76,7 @@ char second_ones[] = {0xD0, 0xD1, 0xA4, 0xA5, 0xE4, 0xE5};
 
 int clockMode = 0;
 int alarmStatus = 1;
+int displayMode = 0;
 int stopStatus = 0;
 int stopHour = 0;
 int stopMin = 0;
@@ -86,8 +88,11 @@ int alarmSec = 59;
 int longCount = 1000;
 int alarmCount = 0;
 int alarmCounter = 1000;
+int activateAlarm = 0;
 
 void display(int mode, int hh, int mm, int ss);
+void write_LCD_command(char command);
+void displayTop(char text[]);
 
 void wait_ms(int milliseconds){
     int ticks = milliseconds * 400;
@@ -98,6 +103,25 @@ void wait_ms(int milliseconds){
 
 void RTC_IRQHandler(void) {
     if((ILR >> 0) & 1) {
+    	if(clockMode != 2){
+    		write_LCD_command(0x80);
+    		if((clockMode == 0) & (displayMode == 0)){
+    			if(alarmStatus == 1){
+    				displayTop("Clock      Alarm: On");
+    			} else {
+    				displayTop("Clock     Alarm: Off");
+    			}
+    		} else if((clockMode == 0) & (displayMode == 1)){
+    			if(alarmStatus == 1){
+    			    displayTop("Needs fixed         ");
+    			} else {
+    			    displayTop("Clock     Alarm: Off");
+    			}
+    		} else if(clockMode == 1){
+    			displayTop("Stopwatch           ");
+    		}
+
+    	}
         if(clockMode == 0){
             display(clockMode, (HOUR&31), (MIN&63), (SEC&63));
         }
@@ -117,7 +141,7 @@ void RTC_IRQHandler(void) {
         ILR |= (1<<0);
     }
     if ((ILR >> 1) & 1) {
-        //do alarm actions
+    	activateAlarm = 1;
     	ILR |= (1<<1);
     }
 }
@@ -125,7 +149,7 @@ void RTC_IRQHandler(void) {
 void TIMER0_IRQHandler(void) {
     if((T0IR >> 0) & 1) {
         alarmCount++;
-        if (1){
+        if ((alarmCount < 200) & activateAlarm){
             if ((FIO0PIN >> 3) & 1){
                 FIO0PIN &= ~(1<<3);
             } else {
@@ -144,21 +168,26 @@ void TIMER0_IRQHandler(void) {
 
 void RTCinterruptInitialize(void){
     CIIR |= (1<<0);
-    AMR |= (7<<0);
+    AMR |= (248<<0);
     ILR |= (3<<0);
     ISER0 |= (1<<17);
 }
 
 void TIMER0interruptInitialize(void){
 	PCONP |= (1<<1);
-    T0TCR |= (1<<0);
+	T0TCR &= ~(1<<0);
+    T0CTCR &= ~(1<<0);
     T0MCR |= (1<<0) | (1<<1);
     T0MR0 = alarmCounter;
-    T0IR |= (1<<0);
+    T0TC = 1;
+    T0PR = 1;
     ISER0 |= (1<<1);
+    T0IR |= (1<<0);
+    T0TCR |= (1<<0);
 }
 
 void buttonChirp(){
+	activateAlarm = 0;
     for(int i = 0; i < 10; i++){
         FIO0PIN &= ~(1<<3);
         wait_ms(1);
@@ -439,23 +468,21 @@ void set_clock (void) {
     HOUR = clockTime[0];
     MIN = clockTime[1];
     SEC = clockTime[2];
-    write_LCD_command(0x80);
-    displayTop("Clock       Alarm On");
     return;
 }
 
 int main(void) {
     CCR |= (1<<0);
 
+    RTCinterruptInitialize();
+    TIMER0interruptInitialize();
+
     HOUR = 12;
     MIN = 0;
     SEC = 0;
     ALHOUR = 12;
-    ALMIN = 01;
-    ALSEC = 00;
-
-    RTCinterruptInitialize();
-    TIMER0interruptInitialize();
+    ALMIN = 00;
+    ALSEC = 30;
 
     init_LCD();
 
@@ -511,10 +538,18 @@ int main(void) {
                     stopSec = 0;
                 }
             } else {
-            	if(stopStatus == 0){
-            		stopStatus = 1;
-            	} else {
-            		stopStatus = 0;
+            	if(clockMode == 0){
+            		if(displayMode == 0){
+            			displayMode = 1;
+            		} else {
+            			displayMode = 0;
+            		}
+            	} else if (clockMode = 1){
+            		if(stopStatus == 0){
+            			stopStatus = 1;
+            		} else {
+            			stopStatus = 0;
+            		}
             	}
             }
         }
@@ -543,6 +578,5 @@ int main(void) {
 // Should short and long press be shorter in time length
 
 //To Do
-// Display top on clock and stopwatch
-// Alarm sound
-// Button sound
+// Display top line alarm time
+// Alarm interrupt
