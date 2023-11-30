@@ -64,6 +64,8 @@ char numbers[10][6] = {{0x00, 0x00, 0x01, 0x02, 0x03, 0x04},
 {0x00, 0x00, 0x03, 0x04, 0x20, 0x02}};
 char colon[] = {0x20, 0x07, 0x07};
 
+char displayLine[] = {'C','l','o','c','k',' ','A','l','a','r','m',':','h','h',':','m','m',':','s','s'};
+
 // number positions
 char hour_tens[] = {0xC1, 0xC2, 0x95, 0x96, 0xD5, 0xD6};
 char hour_ones[] = {0xC4, 0xC5, 0x98, 0x99, 0xD8, 0xD9};
@@ -85,14 +87,16 @@ int alarmHour = 23;
 int alarmMin = 59;
 int alarmSec = 59;
 
-int longCount = 1000;
+int longCount = 400;
 int alarmCount = 0;
 int alarmCounter = 1000;
 int activateAlarm = 0;
+int deactivateButtons = 0;
 
 void display(int mode, int hh, int mm, int ss);
 void write_LCD_command(char command);
 void displayTop(char text[]);
+char digitToChar(int digit);
 
 void wait_ms(float milliseconds){
     int ticks = milliseconds * 400;
@@ -103,7 +107,7 @@ void wait_ms(float milliseconds){
 
 void RTC_IRQHandler(void) {
     if((ILR >> 0) & 1) {
-    	if(clockMode != 2){
+    	if((clockMode != 2) & (activateAlarm == 0)){
     		write_LCD_command(0x80);
     		if((clockMode == 0) & (displayMode == 0)){
     			if(alarmStatus == 1){
@@ -113,7 +117,13 @@ void RTC_IRQHandler(void) {
     			}
     		} else if((clockMode == 0) & (displayMode == 1)){
     			if(alarmStatus == 1){
-    			    displayTop("Needs fixed         ");
+    				displayLine[12] = digitToChar(ALHOUR/10);
+    				displayLine[13] = digitToChar(ALHOUR%10);
+    				displayLine[15] = digitToChar(ALMIN/10);
+    				displayLine[16] = digitToChar(ALMIN%10);
+    				displayLine[18] = digitToChar(ALSEC/10);
+    				displayLine[19] = digitToChar(ALSEC%10);
+    			    displayTop(displayLine);
     			} else {
     			    displayTop("Clock     Alarm: Off");
     			}
@@ -132,17 +142,17 @@ void RTC_IRQHandler(void) {
     			}
     		}
     	}
-        if(clockMode == 0){
+        if((clockMode == 0) & (activateAlarm == 0)){
             display(clockMode, (HOUR&31), (MIN&63), (SEC&63));
         }
-        else if(clockMode == 1){
+        else if((clockMode == 1) & (activateAlarm == 0)){
             display(clockMode, stopHour, stopMin, stopSec);
         }
-        ILR |= (1<<0);
+        ILR = 1;
     }
     if ((ILR >> 1) & 1) {
        	activateAlarm = 1;
-       	ILR |= (1<<1);
+       	ILR = 1<<1;
     }
 
 }
@@ -150,7 +160,7 @@ void RTC_IRQHandler(void) {
 void TIMER0_IRQHandler(void) {
     if((T0IR >> 0) & 1) {
         alarmCount++;
-        if ((alarmCount < 200) & activateAlarm){
+        if ((alarmCount < 300) & activateAlarm){
             if ((FIO0PIN >> 3) & 1){
                 FIO0PIN &= ~(1<<3);
             } else {
@@ -163,7 +173,7 @@ void TIMER0_IRQHandler(void) {
                 alarmCount = 0;
             }
         }
-        T0IR |= (1<<0);
+        T0IR = (1<<0);
     }
 }
 
@@ -171,7 +181,7 @@ void RTCinterruptInitialize(void){
     CIIR |= (1<<0);
     AMR |=  (1<<3) | (1<<4) | (1<<5) | (1<<6) | (1<<7);
     AMR &= ~(1<<0) & ~(1<<1) & ~(1<<2);
-    ILR |= (1<<0) | (1<<1);
+    ILR = 3;
     ISER0 |= (1<<17);
 }
 
@@ -184,7 +194,7 @@ void TIMER0interruptInitialize(void){
     T0TC = 1;
     T0PR = 1;
     ISER0 |= (1<<1);
-    T0IR |= (1<<0);
+    T0IR = 1;
     T0TCR |= (1<<0);
 }
 
@@ -196,6 +206,21 @@ void buttonChirp(){
         FIO0PIN |=  (1<<3);
         wait_ms(0.5);
     }
+}
+
+char digitToChar(int digit){
+	switch(digit){
+		case 0: return '0';
+		case 1: return '1';
+		case 2: return '2';
+		case 3: return '3';
+		case 4: return '4';
+		case 5: return '5';
+		case 6: return '6';
+		case 7: return '7';
+		case 8: return '8';
+		case 9: return '9';
+	}
 }
 
 void write_LCD_clear(char command) {
@@ -340,7 +365,7 @@ void set_alarm (void) {
     int alarmTime[] = {ALHOUR, ALMIN, ALSEC};
     int index = 0;
     int mod = 23;
-    while(index > -1  && index < 4){
+    while(index > -1  && index < 3){
     	int count = 0;
         // Button 1
         if((FIO0PIN >> 0) & 1){
@@ -409,7 +434,7 @@ void set_clock (void) {
     int clockTime[] = {HOUR, MIN, SEC};
     int index = 0;
     int mod = 23;
-    while(index < 4 && index > -1){
+    while(index > -1 && index < 3){
     	int count = 0;
         // Button 1
         if((FIO0PIN >> 0) & 1){
@@ -484,7 +509,7 @@ int main(void) {
     SEC = 0;
     ALHOUR = 12;
     ALMIN = 00;
-    ALSEC = 30;
+    ALSEC = 15;
 
     init_LCD();
 
@@ -495,12 +520,13 @@ int main(void) {
     clockMode = 0;
 
     while(1) {
-        //write_LCD_command(0x80);
-        //write_LCD_data(0x42);
-        //display(0, 8, 0, 0);
-        //wait_ms(1000);
-
     	int count = 0;
+    	while(activateAlarm == 1){
+    		if(((FIO0PIN >> 0) & 1) | ((FIO0PIN >> 1) & 1) | ((FIO0PIN >> 2) & 1)){
+    			buttonChirp();
+    			wait_ms(500);
+    		}
+    	}
         // Button 1
         if((FIO0PIN >> 0) & 1){
             buttonChirp();
@@ -574,11 +600,3 @@ int main(void) {
     }
     return 0 ;
 }
-
-//Questions
-// Should stopwatch reset and pause when cycling modes
-// Should short and long press be shorter in time length
-
-//To Do
-// Display top line alarm time
-// Alarm interrupt
