@@ -31,7 +31,7 @@
 #define T0IR (*(volatile unsigned int *) 0x40004000)
 #define T0TCR (*(volatile unsigned int *) 0x40004004)
 #define T0TC (*(volatile unsigned int *) 0x40004008)
-#define T0PR (*(volatile unsigned int *) 0x4000400C)
+//#define T0PR (*(volatile unsigned int *) 0x4000400C)
 #define T0MCR (*(volatile unsigned int *) 0x40004014)
 #define T0MR0 (*(volatile unsigned int *) 0x40004018)
 
@@ -125,7 +125,7 @@ void RTC_IRQHandler(void) {
 void TIMER0_IRQHandler(void) {
     if((T0IR >> 0) & 1) {
         alarmCount++;
-        if (alarmCount < 200){
+        if (1){
             if ((FIO0PIN >> 3) & 1){
                 FIO0PIN &= ~(1<<3);
             } else {
@@ -150,10 +150,10 @@ void RTCinterruptInitialize(void){
 }
 
 void TIMER0interruptInitialize(void){
+	PCONP |= (1<<1);
     T0TCR |= (1<<0);
     T0MCR |= (1<<0) | (1<<1);
-    T0MR0 = 1;
-    T0PR = alarmCounter;
+    T0MR0 = alarmCounter;
     T0IR |= (1<<0);
     ISER0 |= (1<<1);
 }
@@ -450,12 +450,12 @@ int main(void) {
     HOUR = 12;
     MIN = 0;
     SEC = 0;
-    ALHOUR = 23;
-    ALMIN = 59;
-    ALSEC = 59;
+    ALHOUR = 12;
+    ALMIN = 01;
+    ALSEC = 00;
 
     RTCinterruptInitialize();
-    Timer0interruptInitialize();
+    TIMER0interruptInitialize();
 
     init_LCD();
 
