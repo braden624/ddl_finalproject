@@ -94,7 +94,7 @@ void display(int mode, int hh, int mm, int ss);
 void write_LCD_command(char command);
 void displayTop(char text[]);
 
-void wait_ms(int milliseconds){
+void wait_ms(float milliseconds){
     int ticks = milliseconds * 400;
     while(ticks > 0){
         ticks--;
@@ -122,28 +122,29 @@ void RTC_IRQHandler(void) {
     		}
 
     	}
+    	if(stopStatus == 1){
+    		stopSec++;
+    		if(stopSec > 59){
+    			stopSec = 0;
+    			stopMin++;
+    			if(stopMin > 99){
+    				stopMin = 0;
+    			}
+    		}
+    	}
         if(clockMode == 0){
             display(clockMode, (HOUR&31), (MIN&63), (SEC&63));
         }
         else if(clockMode == 1){
-        	if(stopStatus == 1){
-        		stopSec++;
-        		if(stopSec > 59){
-        			stopSec = 0;
-        			stopMin++;
-        			if(stopMin > 99){
-        				stopMin = 0;
-        			}
-        		}
-        	}
             display(clockMode, stopHour, stopMin, stopSec);
         }
         ILR |= (1<<0);
     }
     if ((ILR >> 1) & 1) {
-    	activateAlarm = 1;
-    	ILR |= (1<<1);
+       	activateAlarm = 1;
+       	ILR |= (1<<1);
     }
+
 }
 
 void TIMER0_IRQHandler(void) {
@@ -168,8 +169,9 @@ void TIMER0_IRQHandler(void) {
 
 void RTCinterruptInitialize(void){
     CIIR |= (1<<0);
-    AMR |= (248<<0);
-    ILR |= (3<<0);
+    AMR |=  (1<<3) | (1<<4) | (1<<5) | (1<<6) | (1<<7);
+    AMR &= ~(1<<0) & ~(1<<1) & ~(1<<2);
+    ILR |= (1<<0) | (1<<1);
     ISER0 |= (1<<17);
 }
 
@@ -190,9 +192,9 @@ void buttonChirp(){
 	activateAlarm = 0;
     for(int i = 0; i < 10; i++){
         FIO0PIN &= ~(1<<3);
-        wait_ms(1);
+        wait_ms(0.5);
         FIO0PIN |=  (1<<3);
-        wait_ms(1);
+        wait_ms(0.5);
     }
 }
 
