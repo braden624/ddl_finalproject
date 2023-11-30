@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 
-
 //define registers for RTC
 #define ILR (*(volatile unsigned int *) 0x40024000)
 #define CCR (*(volatile unsigned int *) 0x40024008)
@@ -19,22 +18,27 @@
 #define ALSEC (*(volatile unsigned int *) 0x40024060)
 #define ALMIN (*(volatile unsigned int *) 0x40024064)
 #define ALHOUR (*(volatile unsigned int *) 0x40024068)
-#define ISER (*(volatile unsigned int *) 0xE000E100)
+#define ISER0 (*(volatile unsigned int *) 0xE000E100)
 #define PCONP (*(volatile unsigned int *) 0xE000E100)
 
-//define regisers for Alarm sound
+//define registers for buttons
 #define FIO0DIR (*(volatile unsigned int *) 0x2009C000)
 #define FIO0PIN (*(volatile unsigned int *) 0x2009C014)
-#define PINSEL1 (*(volatile unsigned int *) 0x4002C004)
 #define PINMODE0 (*(volatile unsigned int *) 0x4002C040)
-#define DACR (*(volatile unsigned int *) 0x4008C000)
-//Switch 1 P0. , Switch 2 P0. , Switch 3 P0.
+//Button 1 P0.0 , Button 2 P0.1 , Button 3 P0.2
+
+//define registers for PWM
+#define T0IR (*(volatile unsigned int *) 0x40004000)
+#define T0TCR (*(volatile unsigned int *) 0x40004004)
+#define T0TC (*(volatile unsigned int *) 0x40004008)
+#define T0PR (*(volatile unsigned int *) 0x4000400C)
+#define T0MCR (*(volatile unsigned int *) 0x40004014)
+#define T0MR0 (*(volatile unsigned int *) 0x40004018)
 
 //define registers for LCD pins
 #define FIO2DIR (*(volatile unsigned int *) 0x2009C040)
 #define FIO2PIN (*(volatile unsigned int *) 0x2009C054)
 //DB0-7 P2.0-7, E P2.8, R/W P2.10, RS P2.11
-
 
 // custom bit patterns
 char custom_data[8][8] = {{0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111, 0b11111, 0b11111},
@@ -80,6 +84,8 @@ int alarmMin = 59;
 int alarmSec = 59;
 
 int longCount = 1000;
+int alarmCount = 0;
+int alarmCounter = 1000;
 
 void display(int mode, int hh, int mm, int ss);
 
@@ -116,11 +122,49 @@ void RTC_IRQHandler(void) {
     }
 }
 
+void TIMER0_IRQHandler(void) {
+    if((T0IR >> 0) & 1) {
+        alarmCount++;
+        if (alarmCount < 200){
+            if ((FIO0PIN >> 3) & 1){
+                FIO0PIN &= ~(1<<3);
+            } else {
+                FIO0PIN |= (1<<3);
+            }
+        }
+        else{
+            FIO0PIN |= (1<<3);
+            if(alarmCount > 500){
+                alarmCount = 0;
+            }
+        }
+        T0IR |= (1<<0);
+    }
+}
+
 void RTCinterruptInitialize(void){
     CIIR |= (1<<0);
     AMR |= (7<<0);
     ILR |= (3<<0);
-    ISER |= (1<<17);
+    ISER0 |= (1<<17);
+}
+
+void TIMER0interruptInitialize(void){
+    T0TCR |= (1<<0);
+    T0MCR |= (1<<0) | (1<<1);
+    T0MR0 = 1;
+    T0PR = alarmCounter;
+    T0IR |= (1<<0);
+    ISER0 |= (1<<1);
+}
+
+void buttonChirp(){
+    for(int i = 0; i < 10; i++){
+        FIO0PIN &= ~(1<<3);
+        wait_ms(1);
+        FIO0PIN |=  (1<<3);
+        wait_ms(1);
+    }
 }
 
 void write_LCD_clear(char command) {
@@ -269,6 +313,7 @@ void set_alarm (void) {
     	int count = 0;
         // Button 1
         if((FIO0PIN >> 0) & 1){
+            buttonChirp();
         	while((FIO0PIN >> 0) & 1){
         		count++;
         	    wait_ms(1);
@@ -285,6 +330,7 @@ void set_alarm (void) {
         }
         // Button 2
         if((FIO0PIN >> 1) & 1){
+            buttonChirp();
         	while((FIO0PIN >> 1) & 1){
         		count++;
         	    wait_ms(1);
@@ -301,6 +347,7 @@ void set_alarm (void) {
         }
         // Button 3
         if((FIO0PIN >> 2) & 1){
+            buttonChirp();
         	while((FIO0PIN >> 2) & 1){
         		count++;
         	    wait_ms(1);
@@ -335,6 +382,7 @@ void set_clock (void) {
     	int count = 0;
         // Button 1
         if((FIO0PIN >> 0) & 1){
+            buttonChirp();
         	while((FIO0PIN >> 0) & 1){
         		count++;
         	    wait_ms(1);
@@ -351,6 +399,7 @@ void set_clock (void) {
         }
         // Button 2
         if((FIO0PIN >> 1) & 1){
+            buttonChirp();
         	while((FIO0PIN >> 1) & 1){
         		count++;
         	    wait_ms(1);
@@ -366,6 +415,7 @@ void set_clock (void) {
         }
         // Button 3
         if((FIO0PIN >> 2) & 1){
+            buttonChirp();
         	while((FIO0PIN >> 0) & 1){
         		count++;
         	    wait_ms(1);
@@ -405,10 +455,12 @@ int main(void) {
     ALSEC = 59;
 
     RTCinterruptInitialize();
+    Timer0interruptInitialize();
 
     init_LCD();
 
     FIO0DIR &= ~(1u<<0) & ~(1u<<1) & ~(1u<<2);
+    FIO0DIR |= (1<<3);
     PINMODE0 |= (1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5);
 
     clockMode = 0;
@@ -422,6 +474,7 @@ int main(void) {
     	int count = 0;
         // Button 1
         if((FIO0PIN >> 0) & 1){
+            buttonChirp();
         	while((FIO0PIN >> 0) & 1){
         		count++;
         		wait_ms(1);
@@ -442,6 +495,7 @@ int main(void) {
         }
         // Button 2
         if((FIO0PIN >> 1) & 1){
+            buttonChirp();
         	while((FIO0PIN >> 1) & 1){
         	        		count++;
         	        		wait_ms(1);
@@ -466,6 +520,7 @@ int main(void) {
         }
         // Button 3
         if((FIO0PIN >> 2) & 1){
+            buttonChirp();
         	while((FIO0PIN >> 2) & 1){
         		count++;
         	    wait_ms(1);
