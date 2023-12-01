@@ -472,7 +472,7 @@ void set_clock (void) {
         // Button 3
         if((FIO0PIN >> 2) & 1){
             buttonChirp();
-        	while((FIO0PIN >> 0) & 1){
+        	while((FIO0PIN >> 2) & 1){
         		count++;
         	    wait_ms(1);
         	}
